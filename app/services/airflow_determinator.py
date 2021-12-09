@@ -150,9 +150,7 @@ def create_lookup_dictionary(ventilation_components):
     
     return lookup_dictionary
 
-json_object = json.dumps(ventilation_components, indent=4)
 
-print(json_object)
-
+## Write the file
 with open("../ressources/test_file.json", "w") as outfile:
-    json.dump(json_object, outfile)
+    json.dump(ventilation_components, outfile)
