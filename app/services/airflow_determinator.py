@@ -1,69 +1,83 @@
 import json
 
-f = open('../ressources/hvacexporter_data.json')
-data = json.load(f)
+def airflow_determinator(data):
+    flow_system_classes = json.loads(data)
+    ventilation_components = flow_system_classes["system"]["SubSystems"]["ventilation"]["Components"]
+    
+    set_all_flows_to_zero(ventilation_components)
 
-## ventilation_system = data["system"]["SubSystems"]["ventilation"]["Components"]
+    rooms_with_terminals = find_air_terminals_and_airflow(flow_system_classes, ventilation_components)
+
+    apply_ventilation_req_from_room_to_terminal(rooms_with_terminals, ventilation_components)
+
+    service_to_calculate_airflow(ventilation_components)
+
+    return json.dumps(ventilation_components)
+
+
 
 ## Set all flows to zero
+def set_all_flows_to_zero(ventilation_components):
+    for component in ventilation_components:
+        ports = component["ConnectedWith"]
+        
+        for port in ports:
+            port["DesignFlow"] = 0
 
-ventilation_components = data["system"]["SubSystems"]["ventilation"]["Components"]
 
-for component in ventilation_components:
-    ports = component["ConnectedWith"]
-    
-    for port in ports:
-        port["DesignFlow"] = 0
 
 ## Find the air terminals and their airflow demand
+def find_air_terminals_and_airflow(flow_system_classes,ventilation_components):
+    rooms = flow_system_classes["spaces"]["SpacesInModel"]
+    rooms_with_terminals = []
 
-rooms = data["spaces"]["SpacesInModel"]
-rooms_with_terminals = []
+    for room in rooms:
+        tag = room["Tag"]
+        ventilation_req = room["IndoorClimateZone"]["Ventilation"]["AirFlow"]["DesignerRequirement"]
 
-for room in rooms:
-    tag = room["Tag"]
-    ventilation_req = room["IndoorClimateZone"]["Ventilation"]["AirFlow"]["DesignerRequirement"]
+        supply_terminals = []
+        extract_terminals = []
 
-    supply_terminals = []
-    extract_terminals = []
-
-    for component in ventilation_components:
-        if component["ComponentType"] == "AirTerminal":
-            if tag in component["ContainedInSpaces"]:
-                for port in component["ConnectedWith"]:
-                    if port["ConnectorType"] == "suppliesFluidFrom":
-                        supply_terminals.append(component["Tag"])
-                    if port["ConnectorType"] == "suppliesFluidTo":
-                        extract_terminals.append(component["Tag"])
- 
-    room_terminal_dict = {tag: {"ventilation_airflow": ventilation_req, 
-                                "supply_terminals": supply_terminals,
-                                "extract_terminals": extract_terminals}}
+        for component in ventilation_components:
+            if component["ComponentType"] == "AirTerminal":
+                if tag in component["ContainedInSpaces"]:
+                    for port in component["ConnectedWith"]:
+                        if port["ConnectorType"] == "suppliesFluidFrom":
+                            supply_terminals.append(component["Tag"])
+                        if port["ConnectorType"] == "suppliesFluidTo":
+                            extract_terminals.append(component["Tag"])
     
-    rooms_with_terminals.append(room_terminal_dict)
+        room_terminal_dict = {tag: {"ventilation_airflow": ventilation_req, 
+                                    "supply_terminals": supply_terminals,
+                                    "extract_terminals": extract_terminals}}
+        
+        rooms_with_terminals.append(room_terminal_dict)
+
+    return rooms_with_terminals
+
 
 ## Apply the ventilation requirement from the room, to the air terminal
-
-for rooms in rooms_with_terminals:
-    for key in rooms.keys():
-        room = rooms[key]
-        
-        no_of_supply_terminals_in_room = len(room["supply_terminals"])
-        ventilation_demand_pr_supply_terminal = room["ventilation_airflow"] / no_of_supply_terminals_in_room
-
-        no_of_extract_terminals_in_room = len(room["extract_terminals"])
-        ventilation_demand_pr_extract_terminal = room["ventilation_airflow"] / no_of_extract_terminals_in_room
-
-        ## Set the new value on the terminals
-        for component in ventilation_components:
+def apply_ventilation_req_from_room_to_terminal(rooms_with_terminals, ventilation_components):
+    for rooms in rooms_with_terminals:
+        for key in rooms.keys():
+            room = rooms[key]
             
-            if component["Tag"] in room["supply_terminals"]:
-                for port in component["ConnectedWith"]:
-                    port["DesignFlow"] = ventilation_demand_pr_supply_terminal
-            
-            if component["Tag"] in room["extract_terminals"]:
-                for port in component["ConnectedWith"]:
-                    port["DesignFlow"] = ventilation_demand_pr_extract_terminal
+            no_of_supply_terminals_in_room = len(room["supply_terminals"])
+            ventilation_demand_pr_supply_terminal = room["ventilation_airflow"] / no_of_supply_terminals_in_room
+
+            no_of_extract_terminals_in_room = len(room["extract_terminals"])
+            ventilation_demand_pr_extract_terminal = room["ventilation_airflow"] / no_of_extract_terminals_in_room
+
+            ## Set the new value on the terminals
+            for component in ventilation_components:
+                
+                if component["Tag"] in room["supply_terminals"]:
+                    for port in component["ConnectedWith"]:
+                        port["DesignFlow"] = ventilation_demand_pr_supply_terminal
+                
+                if component["Tag"] in room["extract_terminals"]:
+                    for port in component["ConnectedWith"]:
+                        port["DesignFlow"] = ventilation_demand_pr_extract_terminal
 
 
 ## Now we need to create a service that loops through the system and applies the airflow
@@ -71,17 +85,17 @@ for rooms in rooms_with_terminals:
 def service_to_calculate_airflow(ventilation_components):
 
     for supply_component in ventilation_components:
-        
+
         if supply_component["ComponentType"] == "AirTerminal":
-            
+
             if supply_component["ConnectedWith"][0]["ConnectorType"] == "suppliesFluidFrom":
                 lookup_dictionary = create_lookup_dictionary(ventilation_components)
-            
+
                 airflow = supply_component["ConnectedWith"][0]["DesignFlow"]
                 previous_component_tag = 0
                 supply_system = True
 
-                loop_to_supplying_fan(supply_component, airflow, previous_component_tag, lookup_dictionary, supply_system)
+                loop_to_supplying_fan(ventilation_components, supply_component, airflow, previous_component_tag, lookup_dictionary, supply_system)
             
             elif supply_component["ConnectedWith"][0]["ConnectorType"] == "suppliesFluidTo":
                 lookup_dictionary = create_lookup_dictionary(ventilation_components)
@@ -90,13 +104,13 @@ def service_to_calculate_airflow(ventilation_components):
                 previous_component_tag = 0
                 supply_system = False
 
-                loop_to_supplying_fan(supply_component, airflow, previous_component_tag, lookup_dictionary, supply_system)
+                loop_to_supplying_fan(ventilation_components, supply_component, airflow, previous_component_tag, lookup_dictionary, supply_system)
     
 
 ## Loop out to the supplying ventilation fan and sum up all the flows
 
 
-def loop_to_supplying_fan(component, airflow, previous_component_tag, lookup_dictionary, supply_system):
+def loop_to_supplying_fan(ventilation_components, component, airflow, previous_component_tag, lookup_dictionary, supply_system):
     
     next_component_tag = find_next_component(component, lookup_dictionary, supply_system)
     
@@ -104,13 +118,13 @@ def loop_to_supplying_fan(component, airflow, previous_component_tag, lookup_dic
     add_airflow_to_ports(component, previous_component_tag, airflow)
 
     if component["ComponentType"] == "Fan":
-        return 
+            return
 
     component_at_index = lookup_dictionary[next_component_tag]
     next_component = ventilation_components[component_at_index]
     previous_component_tag = component["Tag"]
 
-    loop_to_supplying_fan(next_component, airflow, previous_component_tag, lookup_dictionary, supply_system)
+    loop_to_supplying_fan(ventilation_components, next_component, airflow, previous_component_tag, lookup_dictionary, supply_system)
 
 
 
@@ -136,9 +150,6 @@ def add_airflow_to_ports(component, previous_component_tag, airflow):
     for port in ports:
         if port["Tag"] == previous_component_tag and previous_component_tag != 0:
             port["DesignFlow"] += airflow
-            
-            if port["ConnectorType"] == "suppliesFluidFrom":
-                port["DesignFlow"] += airflow
         
 
 
@@ -150,7 +161,4 @@ def create_lookup_dictionary(ventilation_components):
     
     return lookup_dictionary
 
-
 ## Write the file
-with open("../ressources/test_file.json", "w") as outfile:
-    json.dump(ventilation_components, outfile)

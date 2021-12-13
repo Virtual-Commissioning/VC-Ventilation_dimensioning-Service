@@ -1,10 +1,10 @@
 from app import app
 from flask import request
-from app.services import to_varmenet_service
+from app.services import airflow_determinator
 
 @app.route('/')
-@app.route('/to_varmenet_converter', methods=['POST'])
-def to_varmenet_converter():
+@app.route('/calculate_ventilation_demand', methods=['POST'])
+def calculate_ventilation_demand():
     data = request.get_data()
-    converted_xml_varmenet_format = to_varmenet_service.to_varmenet_xml_converter(data)
-    return converted_xml_varmenet_format
+    ventilation_demand_as_json = airflow_determinator.airflow_determinator(data)
+    return ventilation_demand_as_json
