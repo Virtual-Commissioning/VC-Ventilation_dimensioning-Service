@@ -2,10 +2,8 @@ def faulty_component(component):
     return {component["Tag"] : False}
 
 
-
 def correct_component(component):
     return {component["Tag"]: True}
-
 
 
 def has_in_and_out_connector(component):
@@ -31,7 +29,6 @@ def has_in_and_out_connector(component):
         return False
 
 
-
 def is_contained_in_two_systems(subsystem, component):
     connectors = component["ConnectedWith"]
     is_in_other_subsystem = False
@@ -43,7 +40,6 @@ def is_contained_in_two_systems(subsystem, component):
     return False
 
 
-
 def check_air_terminal(air_terminal):
     connectors = air_terminal["ConnectedWith"]
 
@@ -51,7 +47,6 @@ def check_air_terminal(air_terminal):
         return faulty_component(air_terminal)
 
     return correct_component(air_terminal)
-
 
 
 def check_flow_segment(flow_segment):
@@ -66,7 +61,6 @@ def check_flow_segment(flow_segment):
     return correct_component(flow_segment)
 
 
-
 def check_motorized_damper(motorized_damper):
     connectors = motorized_damper["ConnectedWith"]
 
@@ -77,7 +71,6 @@ def check_motorized_damper(motorized_damper):
         return faulty_component(motorized_damper)
     
     return correct_component(motorized_damper)
-
 
 
 def check_fire_damper(fire_damper):
@@ -92,7 +85,6 @@ def check_fire_damper(fire_damper):
     return correct_component(fire_damper)
 
 
-
 def check_balancing_damper(balancing_damper):
     connectors = balancing_damper["ConnectedWith"]
 
@@ -103,7 +95,6 @@ def check_balancing_damper(balancing_damper):
         return faulty_component(balancing_damper)
     
     return correct_component(balancing_damper)
-
 
 
 def check_bend(bend):
@@ -121,7 +112,6 @@ def check_bend(bend):
     return correct_component(bend)
 
 
-
 def check_tee(tee):
     connectors = tee["ConnectedWith"]
 
@@ -132,7 +122,6 @@ def check_tee(tee):
         return faulty_component(tee)
     
     return correct_component(tee)
-
 
 
 def check_reduction(reduction):
@@ -147,7 +136,6 @@ def check_reduction(reduction):
     return correct_component(reduction)
 
 
-
 def check_cross(cross):
     connectors = cross["ConnectedWith"]
 
@@ -160,7 +148,6 @@ def check_cross(cross):
     return correct_component(cross)
 
 
-
 def check_heat_exchanger(subsystem, heat_exchanger):
     connectors = heat_exchanger["ConnectedWith"]
 
@@ -170,11 +157,10 @@ def check_heat_exchanger(subsystem, heat_exchanger):
     if not has_in_and_out_connector(heat_exchanger):
         return faulty_component(heat_exchanger)
 
-    if not is_contained_in_two_systems(subsystem, heat_exchanger):
-        return faulty_component(heat_exchanger)
+    # if not is_contained_in_two_systems(subsystem, heat_exchanger):
+    #     return faulty_component(heat_exchanger)
     
     return correct_component(heat_exchanger)
-
 
 
 def check_fan(fan):
@@ -189,7 +175,6 @@ def check_fan(fan):
     return correct_component(fan)
 
 
-
 def check_pump(fan):
     connectors = fan["ConnectedWith"]
 
@@ -200,7 +185,6 @@ def check_pump(fan):
         return faulty_component(fan)
     
     return correct_component(fan)
-
 
 
 def check_radiator(radiator): 
@@ -214,6 +198,7 @@ def check_radiator(radiator):
     
     return correct_component(radiator)
 
+
 def check_balancing_valve(balancing_valve):
     connectors = balancing_valve["ConnectedWith"]
 
@@ -225,6 +210,7 @@ def check_balancing_valve(balancing_valve):
     
     return correct_component(balancing_valve)
 
+
 def check_check_valve(check_valve):
     connectors = check_valve["ConnectedWith"]
 
@@ -235,7 +221,8 @@ def check_check_valve(check_valve):
         return faulty_component(check_valve)
     
     return correct_component(check_valve)
-            
+
+
 def check_differential_pressure_valve(differential_pressure_valve):
     connectors = differential_pressure_valve["ConnectedWith"]
 
@@ -246,6 +233,7 @@ def check_differential_pressure_valve(differential_pressure_valve):
         return faulty_component(differential_pressure_valve)
     
     return correct_component(differential_pressure_valve)
+
 
 def check_motorized_valve(motorized_valve):
     connectors = motorized_valve["ConnectedWith"]
@@ -258,6 +246,7 @@ def check_motorized_valve(motorized_valve):
     
     return correct_component(motorized_valve)
 
+
 def check_safety_valve(safety_valve):
     connectors = safety_valve["ConnectedWith"]
 
@@ -268,6 +257,7 @@ def check_safety_valve(safety_valve):
         return faulty_component(safety_valve)
     
     return correct_component(safety_valve)
+
 
 def check_shunt_valve(shunt_valve):
     connectors = shunt_valve["ConnectedWith"]

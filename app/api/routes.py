@@ -1,10 +1,10 @@
 from app import app
 from flask import request
-from app.services import airflow_determinator
+from app.services import rule_checker
 
 @app.route('/')
-@app.route('/calculate_ventilation_demand', methods=['POST'])
-def calculate_ventilation_demand():
+@app.route('/hvac-rule-checker', methods=['POST'])
+def check_system_integrity():
     data = request.get_data()
-    ventilation_demand_as_json = airflow_determinator.airflow_determinator(data)
-    return ventilation_demand_as_json
+    status_json = rule_checker.rule_checker(data)
+    return status_json
