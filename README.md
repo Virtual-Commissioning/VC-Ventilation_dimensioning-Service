@@ -1,4 +1,4 @@
-# VC-Varmenet-Service
+# VC-HVAC_rule_checker-Service
 
 ## How to run development server
 
